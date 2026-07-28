@@ -118,4 +118,110 @@ class WPAT_Chain {
 
 		return hash( 'sha256', $prev_hash . '|' . $canonical );
 	}
+
+	/**
+	 * Reports whether a dedicated chain key constant is defined.
+	 *
+	 * @return bool True when WPAT_CHAIN_KEY holds a usable value.
+	 */
+	public static function has_dedicated_key() {
+		return defined( 'WPAT_CHAIN_KEY' ) && is_string( WPAT_CHAIN_KEY ) && '' !== trim( WPAT_CHAIN_KEY );
+	}
+
+	/**
+	 * Resolves the key used to sign the sealed head.
+	 *
+	 * The key must live outside the database, otherwise an attacker who can rewrite rows can also
+	 * re-sign the head they rewrote. `WPAT_CHAIN_KEY` in wp-config.php is the intended source;
+	 * `wp_salt( 'auth' )` is a working fallback whose only drawback is that rotating salts
+	 * invalidates the existing seal, which verification reports as a seal failure rather than
+	 * silently accepting.
+	 *
+	 * @return string Signing key.
+	 */
+	public static function chain_key() {
+		if ( self::has_dedicated_key() ) {
+			return (string) WPAT_CHAIN_KEY;
+		}
+
+		return wp_salt( 'auth' );
+	}
+
+	/**
+	 * Signs a head position.
+	 *
+	 * @param int    $last_id     Highest chained row id.
+	 * @param string $last_hash   entry_hash of that row.
+	 * @param int    $entry_count Lifetime number of chained entries, including pruned ones.
+	 * @return string HMAC-SHA256 signature in lowercase hex.
+	 */
+	public static function seal_signature( $last_id, $last_hash, $entry_count ) {
+		$data = (int) $last_id . '|' . (string) $last_hash . '|' . (int) $entry_count;
+
+		return hash_hmac( 'sha256', $data, self::chain_key() );
+	}
+
+	/**
+	 * Builds a sealed head record ready to store.
+	 *
+	 * @param int    $last_id     Highest chained row id.
+	 * @param string $last_hash   entry_hash of that row.
+	 * @param int    $entry_count Lifetime number of chained entries.
+	 * @return array Head record.
+	 */
+	public static function build_head( $last_id, $last_hash, $entry_count ) {
+		return array(
+			'last_id'     => (int) $last_id,
+			'last_hash'   => (string) $last_hash,
+			'entry_count' => (int) $entry_count,
+			'sealed_at'   => gmdate( 'Y-m-d H:i:s' ),
+			'sig'         => self::seal_signature( $last_id, $last_hash, $entry_count ),
+		);
+	}
+
+	/**
+	 * Checks a stored head against the chain key.
+	 *
+	 * @param mixed $head Stored head record.
+	 * @return bool True when the signature matches its contents.
+	 */
+	public static function verify_head( $head ) {
+		if ( ! is_array( $head ) || ! isset( $head['last_id'], $head['last_hash'], $head['entry_count'], $head['sig'] ) ) {
+			return false;
+		}
+
+		$expected = self::seal_signature( $head['last_id'], $head['last_hash'], $head['entry_count'] );
+
+		return hash_equals( $expected, (string) $head['sig'] );
+	}
+
+	/**
+	 * Reads the stored sealed head.
+	 *
+	 * @return array|null Head record, or null when the chain has never been written.
+	 */
+	public static function read_head() {
+		$head = get_option( 'wpat_chain_head', null );
+
+		return is_array( $head ) ? $head : null;
+	}
+
+	/**
+	 * Stores a sealed head.
+	 *
+	 * @param array $head Head record from build_head().
+	 * @return void
+	 */
+	public static function write_head( array $head ) {
+		update_option( 'wpat_chain_head', $head, false );
+	}
+
+	/**
+	 * Generates a chain key value for an administrator to paste into wp-config.php.
+	 *
+	 * @return string 64 hex characters.
+	 */
+	public static function generate_key() {
+		return bin2hex( random_bytes( 32 ) );
+	}
 }
