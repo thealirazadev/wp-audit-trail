@@ -35,11 +35,11 @@ function wpat_log( $event_key, array $context = array() ) {
  */
 function wpat_settings() {
 	$defaults = array(
-		'retention_days'    => 90,
-		'digest_enabled'    => false,
-		'digest_recipient'  => get_option( 'admin_email' ),
-		'scan_enabled'      => false,
-		'scan_time_budget'  => 20,
+		'retention_days'   => 90,
+		'digest_enabled'   => false,
+		'digest_recipient' => get_option( 'admin_email' ),
+		'scan_enabled'     => false,
+		'scan_time_budget' => 20,
 	);
 
 	$stored = get_option( 'wpat_settings', array() );

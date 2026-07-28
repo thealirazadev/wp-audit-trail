@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<ruleset name="WP Audit Trail">
+	<description>WordPress coding standards for WP Audit Trail.</description>
+
+	<file>.</file>
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+	<arg name="extensions" value="php"/>
+	<exclude-pattern>*/build/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+
+	<config name="installed_paths" value="vendor/wp-coding-standards/wpcs,vendor/phpcsstandards/phpcsutils,vendor/phpcsstandards/phpcsextra,vendor/phpcompatibility/php-compatibility,vendor/phpcompatibility/phpcompatibility-paragonie,vendor/phpcompatibility/phpcompatibility-wp"/>
+	<config name="testVersion" value="8.1-"/>
+	<config name="minimum_wp_version" value="6.5"/>
+
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Docs"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="wp-audit-trail"/>
+			</property>
+		</properties>
+	</rule>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="wpat"/>
+				<element value="WPAT"/>
+			</property>
+		</properties>
+		<!-- The wpat_/WPAT_ prefix is the documented, binding convention (docs/rules.md). -->
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
+	</rule>
+
+	<!-- The PHPUnit bootstrap runs before WordPress exists: no WP_Filesystem, and the
+	     polyfills constant name is defined by the core test library, not by this plugin. -->
+	<rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fwrite">
+		<exclude-pattern>tests/bootstrap.php</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound">
+		<exclude-pattern>tests/bootstrap.php</exclude-pattern>
+	</rule>
+</ruleset>

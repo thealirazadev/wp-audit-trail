@@ -1,0 +1,31 @@
+{
+    "name": "thealirazadev/wp-audit-trail",
+    "description": "Tamper-evident audit logging for WordPress with a hash-chained, sealed event log.",
+    "type": "wordpress-plugin",
+    "version": "0.1.0",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpcompatibility/phpcompatibility-wp": "2.1.8",
+        "phpunit/phpunit": "9.6.35",
+        "squizlabs/php_codesniffer": "3.13.5",
+        "wp-coding-standards/wpcs": "3.3.0",
+        "yoast/phpunit-polyfills": "4.0.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": false
+        },
+        "platform": {
+            "php": "8.1.0"
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "test": "phpunit"
+    }
+}
