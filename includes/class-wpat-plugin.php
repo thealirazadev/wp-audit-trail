@@ -52,6 +52,7 @@ class WPAT_Plugin {
 		$this->booted = true;
 
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		add_action( 'plugins_loaded', array( 'WPAT_Migrations', 'run' ) );
 	}
 
 	/**
@@ -70,6 +71,7 @@ class WPAT_Plugin {
 	 */
 	public function activate() {
 		add_option( 'wpat_dropped_events', 0 );
+		WPAT_Migrations::run();
 	}
 
 	/**
