@@ -99,6 +99,17 @@ class WPAT_Test_Cli extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An empty log passes without printing a head line it does not have.
+	 */
+	public function test_verify_on_an_empty_log_omits_the_head_line() {
+		$code = $this->handler()->verify();
+
+		$this->assertSame( 0, $code );
+		$this->assertStringContainsString( 'Chain intact. 0 rows verified', implode( "\n", $this->out ) );
+		$this->assertStringNotContainsString( 'Head:', implode( "\n", $this->out ) );
+	}
+
+	/**
 	 * A tampered chain exits 1 and names the row on error output.
 	 */
 	public function test_verify_fails_with_exit_code_one() {

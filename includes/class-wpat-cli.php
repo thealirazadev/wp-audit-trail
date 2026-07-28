@@ -153,7 +153,7 @@ class WPAT_Cli {
 			true
 		);
 
-		if ( '' !== (string) $report['head_hash'] ) {
+		if ( '' !== (string) $report['sealed_at'] ) {
 			call_user_func(
 				$this->out,
 				sprintf(
