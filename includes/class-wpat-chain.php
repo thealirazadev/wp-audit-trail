@@ -196,12 +196,27 @@ class WPAT_Chain {
 	}
 
 	/**
-	 * Reads the stored sealed head.
+	 * Reads the stored sealed head straight from the database.
+	 *
+	 * This deliberately bypasses the options cache. `get_option()` caches per process, so two
+	 * concurrent writers would each keep sealing an entry_count derived from the snapshot they
+	 * happened to load first, and the lifetime count would drift below the real number of rows
+	 * even though every link in the chain was sound. The head is read once per flush and once per
+	 * verification, so the extra query is not worth trading that correctness for.
 	 *
 	 * @return array|null Head record, or null when the chain has never been written.
 	 */
 	public static function read_head() {
-		$head = get_option( 'wpat_chain_head', null );
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Caching is exactly what must not happen here.
+		$raw = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1", 'wpat_chain_head' ) );
+
+		if ( null === $raw ) {
+			return null;
+		}
+
+		$head = maybe_unserialize( $raw );
 
 		return is_array( $head ) ? $head : null;
 	}

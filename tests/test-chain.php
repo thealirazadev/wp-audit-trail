@@ -141,6 +141,25 @@ class WPAT_Test_Chain extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The head is read past the options cache.
+	 *
+	 * Regression: options are cached per process, so a writer that trusted the cache kept sealing
+	 * an entry count from its own stale snapshot, and two concurrent writers drifted the lifetime
+	 * count below the real row count while every link still verified.
+	 */
+	public function test_head_is_read_past_the_object_cache() {
+		WPAT_Chain::write_head( WPAT_Chain::build_head( 5, str_repeat( 'a', 64 ), 5 ) );
+		wp_cache_set( 'wpat_chain_head', WPAT_Chain::build_head( 1, str_repeat( 'b', 64 ), 1 ), 'options' );
+
+		$head = WPAT_Chain::read_head();
+
+		$this->assertSame( 5, $head['entry_count'] );
+		$this->assertSame( 5, $head['last_id'] );
+
+		delete_option( 'wpat_chain_head' );
+	}
+
+	/**
 	 * The signing key comes from the constant when defined, and from the auth salt otherwise.
 	 */
 	public function test_chain_key_resolution_order() {
