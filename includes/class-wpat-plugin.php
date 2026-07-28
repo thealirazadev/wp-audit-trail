@@ -59,6 +59,10 @@ class WPAT_Plugin {
 
 		$listeners = new WPAT_Listeners();
 		$listeners->boot();
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			WPAT_Cli::register();
+		}
 	}
 
 	/**
