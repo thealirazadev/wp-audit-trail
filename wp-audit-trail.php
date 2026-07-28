@@ -28,6 +28,7 @@ require_once WPAT_PATH . 'includes/class-wpat-migrations.php';
 require_once WPAT_PATH . 'includes/class-wpat-chain.php';
 require_once WPAT_PATH . 'includes/class-wpat-recorder.php';
 require_once WPAT_PATH . 'includes/class-wpat-listeners.php';
+require_once WPAT_PATH . 'includes/class-wpat-verifier.php';
 require_once WPAT_PATH . 'includes/class-wpat-plugin.php';
 
 /**
