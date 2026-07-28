@@ -54,6 +54,8 @@ class WPAT_Plugin {
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'plugins_loaded', array( 'WPAT_Migrations', 'run' ) );
 		add_action( 'admin_notices', array( $this, 'chain_key_notice' ) );
+
+		WPAT_Recorder::instance()->boot();
 	}
 
 	/**
