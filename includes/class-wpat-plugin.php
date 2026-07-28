@@ -56,6 +56,9 @@ class WPAT_Plugin {
 		add_action( 'admin_notices', array( $this, 'chain_key_notice' ) );
 
 		WPAT_Recorder::instance()->boot();
+
+		$listeners = new WPAT_Listeners();
+		$listeners->boot();
 	}
 
 	/**
