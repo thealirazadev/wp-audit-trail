@@ -19,7 +19,9 @@ where history was altered.
 
 ## Planned features
 
-All features below are planned; implementation has not started and follows `docs/phases.md`.
+Implementation follows `docs/phases.md`. Phase 1 is done: the hash chain, sealed head, single-writer
+recorder, auth events (login, failed login, logout) and `wp audit verify`. Everything else below is
+still planned.
 
 - Hash-chained, append-only event log with a sealed head (HMAC keyed via `WPAT_CHAIN_KEY`).
 - Coverage: auth, users and roles, posts/pages, plugins/themes/core, whitelisted options, and a
@@ -57,5 +59,5 @@ header and `readme.txt`).
 
 ## Status
 
-Planning stage: documentation only, no implementation code yet. Implementation proceeds phase by
-phase per [docs/phases.md](docs/phases.md), one approved phase at a time.
+Phase 1 (chain core, auth events, CLI verify) is complete. Later phases proceed one approved phase
+at a time per [docs/phases.md](docs/phases.md).
