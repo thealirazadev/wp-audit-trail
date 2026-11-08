@@ -63,7 +63,7 @@ Writers besides listeners (take the lock):
 
 ## Data model
 
-Table names are the contract; the coding agent must not rename them. All tables use the site's
+Table names are the contract; implementations must not rename them. All tables use the site's
 `$wpdb->prefix`. All datetimes are UTC `Y-m-d H:i:s`.
 
 ### {prefix}wpat_events
