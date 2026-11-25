@@ -29,12 +29,17 @@ Working today:
 - `wp audit verify` (`--format=table|json`, exit codes 0/1/2): a chunked walk that names the first
   broken row or the seal/count failure.
 - A one-time admin notice with a generated `WPAT_CHAIN_KEY` value after activation.
+- Payload redaction before chaining: any value under a secret-looking key (`password`,
+  `user_pass`, `token`, `secret`, `api_key`, `auth`, `cookie`, `nonce`, `salt`, ...) is stored as
+  `"[redacted]"`, at any depth, with the key kept. Extendable via the `wpat_redact_patterns`
+  filter; an invalid pattern counts as a match.
 
 Designed but not built yet (see `docs/architecture.md`):
 
 - Coverage of users and roles, posts/pages, plugins/themes/core, whitelisted options, and a
   resumable checksum scan of wp-content for file changes.
-- Redaction guarantees: passwords never stored, secret-like option values masked by pattern.
+- Option-value redaction by option name (masking the value of a tracked option whose name looks
+  secret), which lands with the option listener.
 - Admin screens: filterable log browser with payload diffs, chunked verification with a
   plain-language report, settings, streaming CSV export.
 - Chain-preserving retention: pruning writes anchor records so old rows can be deleted while
@@ -62,5 +67,6 @@ header and `readme.txt`).
 
 ## Status
 
-Version 0.1.0. The chain core, auth events, and `wp audit verify` are implemented and tested; the
-remaining features listed above are designed in `docs/architecture.md` but not built yet.
+Version 0.1.0. The chain core, payload redaction, auth events, and `wp audit verify` are
+implemented and tested; the remaining features listed above are designed in
+`docs/architecture.md` but not built yet.
