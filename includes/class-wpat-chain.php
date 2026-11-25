@@ -21,7 +21,8 @@ class WPAT_Chain {
 	const GENESIS = '0000000000000000000000000000000000000000000000000000000000000000';
 
 	/**
-	 * Canonical field order. Frozen; see docs/rules.md.
+	 * Canonical field order. Frozen: reordering it changes every entry hash and breaks verification
+	 * of all existing history.
 	 *
 	 * @var string[]
 	 */

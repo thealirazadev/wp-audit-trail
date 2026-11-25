@@ -91,8 +91,8 @@ class WPAT_Plugin {
 	/**
 	 * Shows the generated chain key once, right after activation.
 	 *
-	 * The value is deleted as soon as it has been displayed: it is a secret, and the rules forbid
-	 * echoing it anywhere beyond this one-time notice.
+	 * The value is deleted as soon as it has been displayed: it is a secret, so it is never echoed
+	 * anywhere beyond this one-time notice.
 	 *
 	 * @return void
 	 */

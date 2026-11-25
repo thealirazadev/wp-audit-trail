@@ -17,20 +17,29 @@ log: rows get edited or deleted and the record looks clean. wp-audit-trail is bu
 assumption that the log itself is a target. Verification either passes, or it tells you exactly
 where history was altered.
 
-## Planned features
+## Features
 
-All features below are planned; implementation has not started and follows `docs/phases.md`.
+Working today:
 
 - Hash-chained, append-only event log with a sealed head (HMAC keyed via `WPAT_CHAIN_KEY`).
-- Coverage: auth, users and roles, posts/pages, plugins/themes/core, whitelisted options, and a
+- Authentication events: logins, failed logins, and logouts, with actor, IP, and user agent.
+- A single writer behind a database named lock, so concurrent requests cannot fork the chain.
+- Non-blocking writes: buffered flush on shutdown, synchronous for warning/critical events, and a
+  spill to the error log (with a dropped-events counter) when an event cannot be chained.
+- `wp audit verify` (`--format=table|json`, exit codes 0/1/2): a chunked walk that names the first
+  broken row or the seal/count failure.
+- A one-time admin notice with a generated `WPAT_CHAIN_KEY` value after activation.
+
+Designed but not built yet (see `docs/architecture.md`):
+
+- Coverage of users and roles, posts/pages, plugins/themes/core, whitelisted options, and a
   resumable checksum scan of wp-content for file changes.
-- Non-blocking writes: buffered flush on shutdown, synchronous for warning/critical events.
 - Redaction guarantees: passwords never stored, secret-like option values masked by pattern.
-- Admin screens: filterable log browser with payload diffs, one-click chunked chain
-  verification with a plain-language pass/fail report, settings, streaming CSV export.
+- Admin screens: filterable log browser with payload diffs, chunked verification with a
+  plain-language report, settings, streaming CSV export.
 - Chain-preserving retention: pruning writes anchor records so old rows can be deleted while
   the remaining chain still verifies end to end.
-- WP-CLI: `wp audit verify`, `wp audit export`, `wp audit prune`.
+- `wp audit export` and `wp audit prune`.
 - Optional daily digest email of high-severity events that also publishes the current chain
   head hash as an off-site anchor.
 
@@ -45,17 +54,13 @@ header and `readme.txt`).
 
 | Document | Contents |
 |---|---|
-| [docs/PRD.md](docs/PRD.md) | Problem, target user, core features, non-goals, success criteria |
 | [docs/architecture.md](docs/architecture.md) | Stack rationale, data model, hash chain and seal, key flows, failure modes, layout |
-| [docs/rules.md](docs/rules.md) | Project-specific engineering rules extending the workspace rules |
-| [docs/phases.md](docs/phases.md) | Five implementation phases with commit lists and verification checklists |
+| [docs/decisions.md](docs/decisions.md) | Design decisions behind the chain, seal, writer, and verifier, and the bugs found along the way |
 | [docs/design.md](docs/design.md) | Admin screen and WP-CLI UX design |
-| [docs/testing.md](docs/testing.md) | Test strategy, coverage map, commands, CI plan |
+| [docs/testing.md](docs/testing.md) | Test strategy, coverage map, commands, CI |
 | [docs/api-contracts.md](docs/api-contracts.md) | Event catalog, ajax/export contracts, WP-CLI commands, error format |
-| [docs/launch-checklist.md](docs/launch-checklist.md) | Pre-release verification checklist |
-| [docs/memory.md](docs/memory.md) | Working log and decisions record |
 
 ## Status
 
-Planning stage: documentation only, no implementation code yet. Implementation proceeds phase by
-phase per [docs/phases.md](docs/phases.md), one approved phase at a time.
+Version 0.1.0. The chain core, auth events, and `wp audit verify` are implemented and tested; the
+remaining features listed above are designed in `docs/architecture.md` but not built yet.

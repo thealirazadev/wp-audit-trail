@@ -2,9 +2,8 @@
 
 ## Strategy
 
-- **PHPUnit against the WordPress test suite** (wordpress-develop test lib + MariaDB), the same
-  pattern proven in the sibling `wp-ai-writer` repo. Tests run in the suite's isolated database,
-  never against a development site. There is no JS test rig: the only JavaScript is the verify
+- **PHPUnit against the WordPress test suite** (wordpress-develop test lib + MySQL or MariaDB).
+  Tests run in the suite's isolated database, never against a development site. There is no JS test rig: the only JavaScript is the verify
   polling file, covered by manual QA.
 - **Real hooks, real tables.** Listener tests fire the actual WordPress actions
   (`wp_insert_user`, `wp_update_user`, `wp_trash_post`, `do_action('activated_plugin', ...)`)
@@ -18,6 +17,11 @@
 - **Failure paths are first-class.** The spill path (lock timeout, missing table), redactor
   fail-closed behavior, interrupted prune, and interrupted scan each have dedicated tests; the
   happy path alone proves nothing for an audit tool.
+
+The current suite covers what is implemented: `tests/test-chain.php`, `tests/test-recorder.php`,
+`tests/test-verifier.php`, `tests/test-listeners.php`, and `tests/test-cli.php`. The coverage map
+below also lists the tests each designed-but-unbuilt component (redactor, exporter, retention,
+scanner, admin screens) gets when it lands.
 
 ### Unit-level (isolated classes)
 
@@ -47,11 +51,25 @@
   behavior asserted.
 - Uninstall: tables and options removed, or kept when the setting says so.
 
-### Manual QA (per phase checklist in docs/phases.md)
+### Manual QA
 
-Real wp-env walkthroughs: hand-performed admin actions producing rows, SQL tampering making
-verify fail with the right report, the verify screen's progress UX, scan behavior under a small
-time budget, digest arrival via a mail-catcher, and keyboard/screen-reader passes.
+Real WordPress walkthroughs (wp-env or a hand-provisioned install): hand-performed actions
+producing rows, SQL tampering making verify fail with the right report, and, as those features
+land, the verify screen's progress UX, scan behavior under a small time budget, digest arrival via
+a mail-catcher, and keyboard/screen-reader passes.
+
+Checklist for the current build:
+
+- Activation on a single site: no notices, the events table exists, `wpat_db_version` is set, and
+  the one-time chain key notice renders once.
+- Log in, log out, and fail a login: three rows with the right event_type, actor fields, and
+  severity; the failed login is present even though the request ends on the login error page.
+- `wp audit verify` passes; editing any column of any row by SQL makes it fail naming that id;
+  restoring the row passes again; deleting the newest row fails with a seal or count report.
+- Two parallel processes writing events produce a chain that verifies with the right entry count.
+- With the events table renamed away, a failed login lands in the error log as a
+  `wpat.flush.spilled` JSON line, `wpat_dropped_events` increments, and no error reaches the visitor.
+- Activation on a multisite install is blocked with an explanatory message.
 
 ## Commands
 
@@ -64,21 +82,23 @@ composer run test        # PHPUnit against the WP test suite
 npx wp-env start         # local WordPress at http://localhost:8888
 npx wp-env logs          # PHP error log (watch for wpat.* lines)
 
-# Test suite setup (CI mirrors this): wordpress-develop lib + MariaDB service,
-# WP_TESTS_DIR pointing at the checked-out suite, wp-tests-config.php with the DB creds.
+# Test suite setup: installs WordPress core and the wordpress-develop test library into
+# /tmp, writes wp-tests-config.php, and creates the test database
+# (args: db name, user, password, host, WP version).
+bash bin/install-wp-tests.sh wordpress_test root '' localhost latest
 ```
 
-## CI plan
+## CI
 
-GitHub Actions on push and pull request to `main`: one job matrix over PHP 8.1 and 8.3 with a
-MariaDB 10.6 service container, steps: checkout, install PHP + composer cache, install the
-wordpress-develop test lib (pinned tag), `composer run lint`, `composer run test`. A red check
-blocks merge; there is no deploy step (distribution is a tagged zip).
+`.github/workflows/ci.yml` runs on every push and pull request to `main`: one job on Ubuntu with
+PHP 8.2 and a MySQL 8.0 service. Steps: checkout, `composer install`, `composer lint` (PHPCS),
+install Subversion and run `bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest true`,
+then `composer test` (PHPUnit). There is no deploy step.
 
 ## Definition of done for a feature
 
 1. `composer run lint` clean.
 2. `composer run test` green, new tests included in the same commit series.
-3. The feature's manual checklist items in `docs/phases.md` pass in wp-env.
+3. The relevant manual checklist items above pass on a real WordPress install.
 
 After creating or editing any file, run lint and tests and fix all errors before reporting done.
