@@ -152,11 +152,7 @@ class WPAT_Recorder {
 		$payload = null;
 
 		if ( isset( $event['payload'] ) && null !== $event['payload'] ) {
-			$payload = is_string( $event['payload'] ) ? $event['payload'] : wp_json_encode( $event['payload'] );
-
-			if ( false === $payload ) {
-				$payload = '"[payload encode failed]"';
-			}
+			$payload = $this->encode_payload( $event['payload'] );
 		}
 
 		return array(
@@ -176,6 +172,39 @@ class WPAT_Recorder {
 	}
 
 	/**
+	 * Redacts a payload and encodes it as the JSON string that gets chained.
+	 *
+	 * An already-encoded string payload is decoded and redacted too, and re-encoded only when
+	 * redaction changed something, so a caller cannot bypass the redactor by pre-encoding.
+	 *
+	 * @param mixed $raw Payload from the listener: an array, an object, or a JSON string.
+	 * @return string Encoded payload.
+	 */
+	private function encode_payload( $raw ) {
+		if ( is_string( $raw ) ) {
+			$decoded = json_decode( $raw, true );
+
+			if ( ! is_array( $decoded ) ) {
+				return $raw;
+			}
+
+			$redacted = WPAT_Redactor::redact( $decoded );
+
+			if ( $redacted === $decoded ) {
+				return $raw;
+			}
+
+			$raw = $redacted;
+		} else {
+			$raw = WPAT_Redactor::redact( $raw );
+		}
+
+		$payload = wp_json_encode( $raw );
+
+		return false === $payload ? '"[payload encode failed]"' : $payload;
+	}
+
+	/**
 	 * Returns the request user agent, or an empty string in CLI and cron contexts.
 	 *
 	 * @return string User agent.
@@ -189,7 +218,11 @@ class WPAT_Recorder {
 	}
 
 	/**
-	 * Truncates a value to its column width, counting bytes as the column does.
+	 * Truncates a value to its column width.
+	 *
+	 * The columns are VARCHAR, whose width MySQL counts in characters, not bytes, so the value is
+	 * cut by characters. Cutting by bytes would also split a multibyte character in half and
+	 * store a different string than the one that was hashed.
 	 *
 	 * @param string $value  Value.
 	 * @param int    $length Maximum characters.
@@ -316,8 +349,8 @@ class WPAT_Recorder {
 	 * Writes unchainable events to the error log and counts them.
 	 *
 	 * The full event, payload included, goes to the log on purpose: at this point it is the only
-	 * remaining copy of the record. Payloads have already been through redaction before reaching
-	 * the recorder, so no secret is added to the log by spilling one.
+	 * remaining copy of the record. Payloads went through WPAT_Redactor in normalize(), so no
+	 * secret is added to the log by spilling one.
 	 *
 	 * @param array[] $events  Events that could not be chained.
 	 * @param string  $code    Error code.

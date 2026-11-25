@@ -9,10 +9,10 @@ WordPress core fires a hook (wp_login, profile_update, activated_plugin, updated
 WPAT_Listeners (one thin callback per hook)
         |- normalize hook args into an event array
         |     {event_type, severity, object_type, object_id, object_label, summary, payload}
-        |- WPAT_Redactor strips/replaces sensitive values in the payload
         |- collapse an identical consecutive event fired twice in the same request
         v
 WPAT_Recorder
+        |- normalize: WPAT_Redactor masks secret-keyed payload values, then JSON-encode
         |- severity >= warning  -> flush the whole buffer synchronously now
         |- severity <  warning  -> append to the in-memory buffer
         |- 'shutdown' priority 100 -> flush remaining buffer once
@@ -278,10 +278,12 @@ one InnoDB transaction. Invariants:
 
 - `actor_ip` is `REMOTE_ADDR` only. `X-Forwarded-For` is attacker-controlled and is not trusted;
   sites behind a proxy can supply the real client IP via the `wpat_client_ip` filter.
-- `WPAT_Redactor` removes `user_pass` from every user payload unconditionally, and replaces the
-  before/after values of any option whose name matches
-  `/password|secret|key|token|salt|auth|nonce/i` with `"[redacted]"` while keeping the fact of
-  the change. Patterns extendable via the `wpat_redact_patterns` filter.
+- `WPAT_Redactor` (built) runs in the recorder on every payload and replaces the value under any
+  secret-looking key (`password`, `user_pass`, `secret`, `token`, `api_key`, `auth`, `cookie`,
+  `nonce`, `salt`, ...) with `"[redacted]"` at any depth, keeping the key so the fact of the change
+  survives. Patterns are extendable via the `wpat_redact_patterns` filter, and an invalid pattern
+  counts as a match. Masking a tracked option's value by its option name is designed but lands with
+  the option listener.
 - Post content is never stored; content changes record the changed field names plus sha256 of the
   before/after content.
 

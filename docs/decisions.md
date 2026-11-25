@@ -51,3 +51,11 @@ A network-wide chain and per-site chains give different verification guarantees,
 ## 13. Tests clean up after the recorder's own commit
 
 The recorder issues `COMMIT`, which ends the WordPress test suite's outer transaction, so recorder, verifier, listener and CLI tests truncate the events table in `set_up()` instead of relying on rollback. Chain assertions recompute hashes independently in the test rather than trusting plugin code to check itself.
+
+## 14. Payloads are redacted inside the recorder, by key, failing closed
+
+A chained row cannot be edited without breaking verification, so a secret that reaches the log stays for as long as the row does. `WPAT_Redactor` therefore runs in `WPAT_Recorder::normalize()` on every payload, including one a caller passed as a pre-encoded JSON string, rather than in each listener where one could forget it. It masks the value under any key matching `password`, `secret`, `token`, `cookie`, `nonce`, `salt` and similar words anywhere in the key, or `pass`, `key` and `auth` as a whole key segment, so `user_pass` and `api_key` are masked while `author` is not. The key is kept, so the log still shows that a secret field changed. Patterns can be added through `wpat_redact_patterns`; an invalid pattern counts as a match. An earlier recorder comment claimed payloads were already redacted when no redactor existed; that claim is now true for every event that reaches the chain or the spill log.
+
+## 15. Column caps count characters
+
+`WPAT_Recorder::cap()` truncates with `mb_substr()`, because the event columns are VARCHAR and MySQL counts VARCHAR width in characters. Its docblock used to say it counted bytes; a byte cut would also split a multibyte character and store a different string than the one that was hashed.

@@ -19,16 +19,17 @@
   happy path alone proves nothing for an audit tool.
 
 The current suite covers what is implemented: `tests/test-chain.php`, `tests/test-recorder.php`,
-`tests/test-verifier.php`, `tests/test-listeners.php`, and `tests/test-cli.php`. The coverage map
-below also lists the tests each designed-but-unbuilt component (redactor, exporter, retention,
-scanner, admin screens) gets when it lands.
+`tests/test-redactor.php`, `tests/test-verifier.php`, `tests/test-listeners.php`, and
+`tests/test-cli.php`. The coverage map below also lists the tests each designed-but-unbuilt
+component (exporter, retention, scanner, admin screens) gets when it lands.
 
 ### Unit-level (isolated classes)
 
 - `WPAT_Chain`: canonical field order and flags frozen by a golden-vector test (fixed input,
   expected exact sha256); genesis; seal build/verify; key fallback order; float rejection.
-- `WPAT_Redactor`: pattern matches, `user_pass` stripping, fail-closed replacement, filter
-  extension.
+- `WPAT_Redactor`: key pattern matches and non-matches, `user_pass` masking at any depth,
+  fail-closed handling of an invalid pattern, filter extension; the recorder tests also check that
+  array and pre-encoded string payloads are redacted before chaining.
 - `WPAT_Verifier`: pass, link failure at first/middle/last row, seal failure, count failure,
   chunk boundary exactness (tamper at row 1000 vs 1001), anchor-start behavior.
 - `WPAT_Exporter`: CSV shape, hash columns, formula-injection prefixing, batch streaming.

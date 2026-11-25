@@ -136,6 +136,61 @@ class WPAT_Test_Recorder extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Multibyte values are capped by characters, matching the VARCHAR width, and still verify.
+	 */
+	public function test_multibyte_values_are_capped_by_characters() {
+		$event                 = $this->event( 'auth.login_failed', 3 );
+		$event['object_label'] = str_repeat( "\u{00e9}", 300 );
+
+		WPAT_Recorder::instance()->record( $event );
+
+		$rows = $this->rows();
+		$this->assertCount( 1, $rows );
+		$this->assertSame( 255, mb_strlen( $rows[0]['object_label'] ) );
+		$this->assertSame( 510, strlen( $rows[0]['object_label'] ) );
+		$this->assertSame( hash( 'sha256', WPAT_Chain::GENESIS . '|' . WPAT_Chain::canonical_json( $rows[0] ) ), $rows[0]['entry_hash'] );
+	}
+
+	/**
+	 * Secret-looking payload values are masked before they are chained.
+	 */
+	public function test_payload_secrets_are_redacted_before_chaining() {
+		$event            = $this->event( 'user.updated', 3 );
+		$event['payload'] = array(
+			'changed' => array(
+				'user_pass'  => 'hunter2',
+				'user_email' => 'b@example.com',
+			),
+		);
+
+		WPAT_Recorder::instance()->record( $event );
+
+		$rows    = $this->rows();
+		$payload = json_decode( $rows[0]['payload'], true );
+
+		$this->assertStringNotContainsString( 'hunter2', $rows[0]['payload'] );
+		$this->assertSame( WPAT_Redactor::MASK, $payload['changed']['user_pass'] );
+		$this->assertSame( 'b@example.com', $payload['changed']['user_email'] );
+	}
+
+	/**
+	 * A pre-encoded JSON payload is redacted too, and left byte-identical when nothing matches.
+	 */
+	public function test_string_payloads_are_redacted() {
+		$secret            = $this->event( 'auth.login_failed', 3 );
+		$secret['payload'] = '{"username":"bob","password":"hunter2"}';
+		$plain             = $this->event( 'auth.login_failed', 3 );
+		$plain['payload']  = '{"username":"bob"}';
+
+		WPAT_Recorder::instance()->record( $secret );
+		WPAT_Recorder::instance()->record( $plain );
+
+		$rows = $this->rows();
+		$this->assertStringNotContainsString( 'hunter2', $rows[0]['payload'] );
+		$this->assertSame( '{"username":"bob"}', $rows[1]['payload'] );
+	}
+
+	/**
 	 * An event without a type never reaches the chain.
 	 */
 	public function test_invalid_events_are_not_chained() {
