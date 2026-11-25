@@ -42,18 +42,18 @@ Writers besides listeners (take the lock):
 
 - **PHP 8.1+, WordPress 6.5+** - Plain WordPress plugin, no framework. 8.1 gives enums-free
   readable typed code (`readonly` properties, first-class callable syntax) while matching common
-  shared-hosting floors. 6.5 is the oldest version still receiving security updates at planning
-  time.
+  shared-hosting floors. 6.5 was the oldest version still receiving security updates when the
+  minimum was set.
 - **GPL-2.0-or-later** - Declared in the plugin header and `readme.txt`. WordPress plugins are
   derivative of GPL core; MIT is not an option here.
 - **Custom tables via dbDelta** - The event log must be append-only, indexable, and prunable in
   bulk; the postmeta/options tables are wrong for all three. Schema is versioned through a
-  `wpat_db_version` option and every change ships as a new dbDelta migration step (see
-  `docs/rules.md`).
+  `wpat_db_version` option and every change ships as a new dbDelta migration step; applied steps
+  are never edited.
 - **MySQL 5.7+/MariaDB 10.4+ with InnoDB** - `GET_LOCK` named locks give a cross-connection
   single-writer section without a lock table; InnoDB transactions make insert-plus-seal atomic.
-- **PHPUnit + the WordPress test suite (wordpress-develop lib + MariaDB)** - Same pattern already
-  proven in the sibling `wp-ai-writer` repo; listeners are tested by firing real WP hooks.
+- **PHPUnit + the WordPress test suite** - The wordpress-develop test library against a real
+  MySQL/MariaDB database; listeners are tested by firing real WP hooks.
 - **WP-CLI** - `wp audit verify|export|prune` for operators and cron-driven automation. Command
   classes are plain PHP, testable without a WP-CLI harness via a thin output shim.
 - **No Node toolchain** - Admin screens use WordPress admin styles; the only JavaScript is one
@@ -333,6 +333,6 @@ wp-audit-trail/
     test-scanner.php               Add/modify/delete detection, resume, sweep gating
     test-exporter.php              CSV shape, filters, streaming batches
     test-cli.php                   Command handlers via output shim
-  docs/                            Planning docs (this folder)
+  docs/                            Architecture, design, API contracts, testing, decisions
   README.md
 ```

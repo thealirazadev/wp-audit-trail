@@ -33,7 +33,7 @@
 				<element value="WPAT"/>
 			</property>
 		</properties>
-		<!-- The wpat_/WPAT_ prefix is the documented, binding convention (docs/rules.md). -->
+		<!-- wpat_/WPAT_ is the project's prefix for every global; four characters is enough here. -->
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
 	</rule>
 
