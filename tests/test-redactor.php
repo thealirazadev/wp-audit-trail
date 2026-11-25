@@ -84,6 +84,25 @@ class WPAT_Test_Redactor extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Nesting up to MAX_DEPTH is walked, and anything deeper is replaced wholesale.
+	 */
+	public function test_nesting_past_max_depth_is_masked() {
+		$payload = 'leaf';
+		for ( $i = 0; $i < WPAT_Redactor::MAX_DEPTH; $i++ ) {
+			$payload = array( 'level' => $payload );
+		}
+
+		$this->assertSame( $payload, WPAT_Redactor::redact( $payload ) );
+
+		$out = WPAT_Redactor::redact( array( 'level' => $payload ) );
+		for ( $i = 0; $i < WPAT_Redactor::MAX_DEPTH; $i++ ) {
+			$out = $out['level'];
+		}
+
+		$this->assertSame( WPAT_Redactor::MASK, $out );
+	}
+
+	/**
 	 * The filter can add a pattern.
 	 */
 	public function test_filter_adds_patterns() {
